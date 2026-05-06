@@ -10,9 +10,9 @@ export type Currency = 'INR' | 'USD';
 // Raw card details from the form
 export interface CardDetails {
   cardholderName: string;
-  cardNumber: number;
+  cardNumber: string;
   expiry: string;
-  cvv: number;
+  cvv: string;
 }
 
 // What we send to the API
@@ -37,9 +37,9 @@ export interface Transaction {
 // Per-field form validation errors
 export interface FormErrors {
   cardholderName?: string;
-  cardNumber?: number;
+  cardNumber?: string;
   expiry?: string;
-  cvv?: number;
+  cvv?: string;
   amount?: string;
 }
 
