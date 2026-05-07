@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { PaymentStatus, Transaction } from '@/types';
-import { MOCK_PRODUCT } from '@/constants/mockProduct';
 import { formatMoney } from '@/utils/formatCurrency';
 
 interface StatusScreenProps {
@@ -101,7 +100,7 @@ export default function StatusScreen({
               <div className="rounded-lg border border-brand-border bg-brand-card p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">Payment For</p>
                 <p className="mt-2 text-base font-semibold text-brand-text">
-                {transaction.productName ?? MOCK_PRODUCT.name}
+                  {transaction.productName?.trim() ? transaction.productName : 'No item selected'}
                 </p>
                 <span className="mt-2 inline-flex rounded-full border border-brand-success/40 bg-brand-success/15 px-3 py-1 text-xs font-semibold text-brand-success">
                   Paid
