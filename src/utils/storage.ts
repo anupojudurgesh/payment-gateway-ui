@@ -1,6 +1,9 @@
 import { Transaction } from '@/types';
 
 const STORAGE_KEY = 'payment_history';
+const THEME_KEY = 'payment_theme';
+
+export type UiTheme = 'light' | 'dark';
 
 export const saveHistory = (transactions: Transaction[]): void => {
   try {
@@ -21,4 +24,24 @@ export const loadHistory = (): Transaction[] => {
 
 export const clearHistory = (): void => {
   localStorage.removeItem(STORAGE_KEY);
+};
+
+export const saveTheme = (theme: UiTheme): void => {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    console.error('Failed to save theme');
+  }
+};
+
+export const loadTheme = (): UiTheme | null => {
+  try {
+    const value = localStorage.getItem(THEME_KEY);
+    if (value === 'light' || value === 'dark') {
+      return value;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 };

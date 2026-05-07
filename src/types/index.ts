@@ -1,13 +1,11 @@
-// What type of card the user is holding
-export type CardType = 'visa' | 'mastercard' | 'amex' | 'unknown';
+export type CardType = 'visa' | 'mastercard' | 'amex' | 'discover' | 'jcb' | 'unknown';
 
-// Every possible state the payment can be in
 export type PaymentStatus = 'idle' | 'processing' | 'success' | 'failed' | 'timeout';
 
-// Supported currencies
-export type Currency = 'INR' | 'USD';
+export type Currency = 'INR' | 'USD' | 'EUR' | 'GBP';
 
-// Raw card details from the form
+export type Step = 'order' | 'payment' | 'result';
+
 export interface CardDetails {
   cardholderName: string;
   cardNumber: string;
@@ -15,7 +13,6 @@ export interface CardDetails {
   cvv: string;
 }
 
-// What we send to the API
 export interface PaymentPayload {
   transactionId: string;
   cardDetails: CardDetails;
@@ -23,7 +20,6 @@ export interface PaymentPayload {
   currency: Currency;
 }
 
-// What gets stored in transaction history
 export interface Transaction {
   id: string;
   amount: number;
@@ -32,9 +28,9 @@ export interface Transaction {
   timestamp: string;
   failureReason?: string;
   attemptCount: number;
+  productName?: string;
 }
 
-// Per-field form validation errors
 export interface FormErrors {
   cardholderName?: string;
   cardNumber?: string;
@@ -43,7 +39,17 @@ export interface FormErrors {
   amount?: string;
 }
 
-// What the API returns
+export interface Product {
+  name: string;
+  company: string;
+  companyLogo: string;
+  orderNumber: string;
+  price: number;
+  tax: number;
+  currency: Currency;
+  image: string;
+}
+
 export interface PaymentResponse {
   success: boolean;
   transactionId: string;

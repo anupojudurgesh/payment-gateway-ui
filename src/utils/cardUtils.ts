@@ -1,19 +1,42 @@
 import { CardType } from '@/types';
 
-// Detect card type from first digits
-export const detectCardType = (cardNumber: string): CardType => {
-  const cleaned = cardNumber.replace(/\s/g, '');
+const stripSpaces = (value: string) => value.replaceAll(/\s/g, '');
 
-  if (/^4/.test(cleaned)) return 'visa';
-  if (/^5[1-5]/.test(cleaned) || /^2[2-7]/.test(cleaned)) return 'mastercard';
-  if (/^3[47]/.test(cleaned)) return 'amex';
+// Detect card type from IIN/BIN ranges.
+export const detectCardType = (cardNumber: string): CardType => {
+  const cleaned = stripSpaces(cardNumber);
+
+  if (cleaned.startsWith('4')) {
+    return 'visa';
+  }
+  if (cleaned.startsWith('34') || cleaned.startsWith('37')) {
+    return 'amex';
+  }
+  if (cleaned.startsWith('6011')) {
+    return 'discover';
+  }
+  if (cleaned.startsWith('35')) {
+    return 'jcb';
+  }
+  if (cleaned.length >= 2 && cleaned.startsWith('5')) {
+    const firstTwo = Number.parseInt(cleaned.slice(0, 2), 10);
+    if (firstTwo >= 51 && firstTwo <= 55) {
+      return 'mastercard';
+    }
+  }
+  if (cleaned.length >= 4 && cleaned.startsWith('2')) {
+    const prefix = Number.parseInt(cleaned.slice(0, 4), 10);
+    if (prefix >= 2221 && prefix <= 2720) {
+      return 'mastercard';
+    }
+  }
   return 'unknown';
 };
 
 // Format card number with spaces every 4 digits
 // Amex format: 4-6-5 (e.g. 3782 822463 10005)
 export const formatCardNumber = (value: string, cardType: CardType): string => {
-  const cleaned = value.replace(/\D/g, '');
+  const cleaned = value.replaceAll(/\D/g, '');
 
   if (cardType === 'amex') {
     const parts = [
@@ -41,7 +64,7 @@ export const getCardMaxLength = (cardType: CardType): number => {
 
 // Mask card number for preview display
 export const maskCardNumber = (cardNumber: string): string => {
-  const cleaned = cardNumber.replace(/\s/g, '');
+  const cleaned = stripSpaces(cardNumber);
   if (cleaned.length === 0) return '•••• •••• •••• ••••';
 
   const masked = cleaned.padEnd(16, '•');

@@ -1,26 +1,115 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand-bg: 243 246 252;
+  --brand-surface: 255 255 255;
+  --brand-card: 248 250 255;
+  --brand-border: 223 228 240;
+  --brand-primary: 79 110 247;
+  --brand-primary-hover: 61 92 224;
+  --brand-success: 0 217 163;
+  --brand-failed: 255 77 109;
+  --brand-timeout: 255 159 67;
+  --brand-text: 24 29 51;
+  --brand-muted: 104 114 142;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.theme-dark {
+  --brand-bg: 10 10 15;
+  --brand-surface: 19 19 26;
+  --brand-card: 28 28 39;
+  --brand-border: 42 42 61;
+  --brand-primary: 79 110 247;
+  --brand-primary-hover: 61 92 224;
+  --brand-success: 0 217 163;
+  --brand-failed: 255 77 109;
+  --brand-timeout: 255 159 67;
+  --brand-text: 226 226 240;
+  --brand-muted: 107 107 138;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: rgb(var(--brand-bg));
+  color: rgb(var(--brand-text));
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px rgb(var(--brand-card)) inset;
+  -webkit-text-fill-color: rgb(var(--brand-text));
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgb(var(--brand-border));
+}
+
+.glass {
+  background: rgb(var(--brand-surface));
+  border: 1px solid rgb(var(--brand-border));
+}
+
+.card-scene { perspective: 1000px; }
+
+.card-body {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.card-body.flipped { transform: rotateY(180deg); }
+
+.card-front,
+.card-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-back { transform: rotateY(180deg); }
+
+.check-path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: checkDraw 0.8s ease-out forwards;
+}
+
+@keyframes checkDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: -12px;
+  opacity: 0.9;
+  animation: confettiFall 3s linear forwards;
+}
+
+.theme-toggle-shadow {
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }

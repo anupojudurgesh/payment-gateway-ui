@@ -1,65 +1,127 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useRef, useState } from 'react';
+import { usePaymentStore } from '@/store/paymentStore';
+import { usePayment } from '@/hooks/usePayment';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
+import StepIndicator from '@/components/StepIndicator';
+import OrderSummary from '@/components/OrderSummary';
+import PaymentForm from '@/components/PaymentForm';
+import TransactionHistory from '@/components/TransactionHistory';
+import StatusScreen from '@/components/StatusScreen';
+import ThemeToggle from '@/components/ThemeToggle';
+import { saveTheme, type UiTheme } from '@/utils/storage';
+
+export default function HomePage() {
+  const {
+    loadPersistedHistory,
+    currentStep,
+    transactionHistory,
+    historyPanelOpen,
+    setHistoryPanelOpen,
+  } = usePaymentStore();
+  const { status, currentTransaction, attemptCount, canRetry, handleRetry, handleReset } =
+    usePayment();
+  const [theme, setTheme] = useState<UiTheme>('dark');
+
+  const orderRef = useRef<HTMLDivElement>(null);
+  const payShellRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(orderRef, currentStep === 'order');
+  useFocusTrap(payShellRef, currentStep === 'payment');
+  useFocusTrap(resultRef, currentStep === 'result');
+
+  useEffect(() => {
+    loadPersistedHistory();
+  }, [loadPersistedHistory]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
+    saveTheme(theme);
+  }, [theme]);
+
+  const handleThemeToggle = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="min-h-screen bg-brand-bg px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+      <div className="relative mx-auto max-w-7xl">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <StepIndicator currentStep={currentStep} />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setHistoryPanelOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-brand-border bg-brand-surface px-3 py-1.5 text-xs font-semibold text-brand-text transition-all hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <span>History</span>
+              <span className="rounded-md bg-brand-card px-1.5 py-0.5 text-[10px] text-brand-muted">
+                {transactionHistory.length}
+              </span>
+            </button>
+            <ThemeToggle theme={theme} onToggle={handleThemeToggle} />
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {currentStep === 'order' && (
+          <div ref={orderRef} tabIndex={-1} className="outline-none">
+            <OrderSummary />
+          </div>
+        )}
+
+        {currentStep === 'payment' && (
+          <div ref={payShellRef} tabIndex={-1} className="outline-none">
+            <section className="glass mx-auto max-w-5xl rounded-2xl p-5 shadow-xl shadow-black/10 sm:p-8">
+              <PaymentForm />
+            </section>
+          </div>
+        )}
+
+        {currentStep === 'result' && (
+          <div
+            ref={resultRef}
+            tabIndex={-1}
+            className="glass rounded-2xl p-6 shadow-xl shadow-black/10 outline-none sm:p-10"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <StatusScreen
+              status={status}
+              transaction={currentTransaction}
+              attemptCount={attemptCount}
+              canRetry={canRetry}
+              onRetry={handleRetry}
+              onReset={handleReset}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+        )}
+      </div>
+
+      <button
+        type="button"
+        aria-label="Close history panel"
+        className={`fixed inset-0 z-40 bg-black/30 transition-opacity duration-300 ${
+          historyPanelOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={() => setHistoryPanelOpen(false)}
+      />
+      <aside
+        className={`glass fixed right-0 top-0 z-50 h-full w-full max-w-md border-l border-brand-border shadow-2xl shadow-black/40 transition-transform duration-300 ${
+          historyPanelOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-brand-border px-5 py-4">
+          <h2 className="text-sm font-semibold text-brand-text">Transaction History</h2>
+          <button
+            type="button"
+            onClick={() => setHistoryPanelOpen(false)}
+            className="rounded-md border border-brand-border px-2 py-1 text-xs font-semibold text-brand-text hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
           >
-            Documentation
-          </a>
+            Close
+          </button>
         </div>
-      </main>
-    </div>
+        <TransactionHistory />
+      </aside>
+    </main>
   );
 }
