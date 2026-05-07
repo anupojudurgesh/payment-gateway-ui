@@ -20,7 +20,7 @@ export function useFocusTrap(
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
 
-    first.focus();
+    first.focus({ preventScroll: true });
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
@@ -28,11 +28,11 @@ export function useFocusTrap(
       if (e.shiftKey) {
         if (document.activeElement === first) {
           e.preventDefault();
-          last.focus();
+          last.focus({ preventScroll: true });
         }
       } else if (document.activeElement === last) {
         e.preventDefault();
-        first.focus();
+        first.focus({ preventScroll: true });
       }
     };
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useSyncExternalStore } from 'react';
+import { Suspense, useEffect, useSyncExternalStore, useRef } from 'react';
 import { usePaymentStore } from '@/store/paymentStore';
+import CheckoutPageTransition from '@/components/CheckoutPageTransition';
 import TransactionHistory from '@/components/TransactionHistory';
 import StepIndicator from '@/components/StepIndicator';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -26,6 +27,8 @@ export default function CheckoutShell({ children }: CheckoutShellProps) {
   } = usePaymentStore();
 
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getThemeServerSnapshot);
+  const panelRef = useRef<HTMLElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     loadPersistedHistory();
@@ -35,13 +38,69 @@ export default function CheckoutShell({ children }: CheckoutShellProps) {
     document.documentElement.classList.toggle('theme-dark', theme === 'dark');
   }, [theme]);
 
+  // Handle Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && historyPanelOpen) {
+        setHistoryPanelOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [historyPanelOpen, setHistoryPanelOpen]);
+
+  // Focus trap and restore logic
+  useEffect(() => {
+    if (historyPanelOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      
+      // Focus the panel itself or the first focusable element inside it when opened
+      const focusableElements = panelRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      ) as NodeListOf<HTMLElement>;
+      
+      if (focusableElements && focusableElements.length > 0) {
+        // Small delay to ensure the panel is visible before focussing to avoid scroll jumps
+        setTimeout(() => focusableElements[0].focus(), 50);
+      }
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [historyPanelOpen]);
+
+  const handleTabKey = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Tab' || !panelRef.current) return;
+    
+    const focusableElements = panelRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    ) as NodeListOf<HTMLElement>;
+    
+    if (focusableElements.length === 0) return;
+    
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (e.shiftKey) {
+      if (document.activeElement === firstElement) {
+        lastElement.focus();
+        e.preventDefault();
+      }
+    } else {
+      if (document.activeElement === lastElement) {
+        firstElement.focus();
+        e.preventDefault();
+      }
+    }
+  };
+
   const handleThemeToggle = () => {
     const next: UiTheme = theme === 'dark' ? 'light' : 'dark';
     setStoredTheme(next);
   };
 
   return (
-    <main className="min-h-screen bg-brand-bg px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+    <main className="min-h-screen bg-brand-bg px-4 py-8 sm:px-6 lg:px-10 lg:py-12 [overflow-anchor:none]">
       <div className="relative mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between gap-4">
           <Suspense
@@ -69,7 +128,7 @@ export default function CheckoutShell({ children }: CheckoutShellProps) {
           </div>
         </div>
 
-        {children}
+        <CheckoutPageTransition>{children}</CheckoutPageTransition>
       </div>
 
       <button
@@ -81,6 +140,11 @@ export default function CheckoutShell({ children }: CheckoutShellProps) {
         onClick={() => setHistoryPanelOpen(false)}
       />
       <aside
+        ref={panelRef}
+        onKeyDown={handleTabKey}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Transaction History"
         className={`glass fixed right-0 top-0 z-50 h-full w-full max-w-md border-l border-brand-border shadow-2xl shadow-black/40 transition-transform duration-300 ${
           historyPanelOpen ? 'translate-x-0' : 'translate-x-full'
         }`}

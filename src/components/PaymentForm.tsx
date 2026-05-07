@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import type { CardDetails, CardType, Currency } from '@/types';
@@ -19,6 +20,47 @@ import { usePaymentStore } from '@/store/paymentStore';
 import { formatMoney } from '@/utils/formatCurrency';
 import CardPreview from './CardPreview';
 import CountdownTimer from './CountdownTimer';
+
+/** Portal avoids clipping: route-enter animation sets transform on an ancestor, which traps plain fixed overlays. */
+function SessionExpiredOverlay({ onRetry }: Readonly<{ onRetry: () => void }>) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // document.body for createPortal is only valid after mount (SSR / hydration safe).
+    queueMicrotask(() => setMounted(true));
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4"
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="session-expired-title"
+        className="w-full max-w-sm rounded-xl border border-brand-failed/50 bg-brand-surface p-6 text-center shadow-2xl"
+      >
+        <h3 id="session-expired-title" className="text-lg font-bold text-brand-failed">
+          Session Expired
+        </h3>
+        <p className="mt-2 text-sm text-brand-muted">
+          Your payment session has expired. Start a new 2-minute session to continue.
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-5 w-full rounded-md bg-brand-failed px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-failed"
+        >
+          Retry Session
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 function InlineCardLogo({ cardType }: Readonly<{ cardType: CardType }>) {
   const srcMap: Record<Exclude<CardType, 'unknown'>, string[]> = {
@@ -549,6 +591,10 @@ export default function PaymentForm() {
           {/* Pay button */}
           <button
             type="button"
+            onMouseDown={(e) => {
+              /* Mouse click shouldn’t move focus here; disabling right after submit shifts focus and scrolls the viewport. */
+              if (e.button === 0) e.preventDefault();
+            }}
             onClick={handlePayClick}
             disabled={!formValid || isProcessing || sessionExpired}
             aria-disabled={!formValid || isProcessing || sessionExpired}
@@ -613,24 +659,12 @@ export default function PaymentForm() {
       </div>
 
       {sessionExpired && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-brand-failed/50 bg-brand-surface p-6 text-center shadow-2xl">
-            <h3 className="text-lg font-bold text-brand-failed">Session Expired</h3>
-            <p className="mt-2 text-sm text-brand-muted">
-              Your payment session has expired. Start a new 2-minute session to continue.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setSessionExpired(false);
-                bumpPaymentTimer();
-              }}
-              className="mt-5 w-full rounded-md bg-brand-failed px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-500"
-            >
-              Retry Session
-            </button>
-          </div>
-        </div>
+        <SessionExpiredOverlay
+          onRetry={() => {
+            setSessionExpired(false);
+            bumpPaymentTimer();
+          }}
+        />
       )}
     </div>
   );

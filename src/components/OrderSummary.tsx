@@ -1,5 +1,6 @@
 'use client';
 
+import { startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes';
 
@@ -45,35 +46,49 @@ export default function OrderSummary() {
           <header className="relative z-10 space-y-8">
             <p className={`flex items-center gap-3 text-sm text-brand-muted ${reveal}`}>
               <span className="h-px w-10 bg-gradient-to-r from-brand-primary/70 to-transparent" aria-hidden />
-              Checkout demo
+              SoleLab assessment piece
             </p>
             <h1
               className={`text-balance font-semibold tracking-tight text-brand-text text-[clamp(2.125rem,4.5vw,3.25rem)] leading-[1.12] ${reveal} [animation-delay:75ms]`}
             >
-              Walk through checkout like it&apos;s live.
+              Here&apos;s the checkout flow we put together.
               <span className="mt-3 block max-w-5xl text-[clamp(1.125rem,2.2vw,1.5rem)] font-normal leading-snug text-brand-muted">
-                Nothing hits a real processor — only this app and a mock{' '}
+                No Stripe-style SDK — just a Next.js app, strict TypeScript, and a small{' '}
                 <code className="rounded-md bg-brand-card px-1.5 py-1 font-mono text-[0.85em] text-brand-text/90 ring-1 ring-brand-border/80">
                   /api/pay
                 </code>{' '}
-                route that can succeed, fail, or stall on purpose.
+                handler that fakes success, failure, or a slow response so we could exercise loading,
+                errors, and timeouts without touching real money.
               </span>
             </h1>
             <div
               className={`max-w-5xl space-y-4 text-[15px] leading-relaxed text-brand-muted ${reveal} [animation-delay:150ms]`}
             >
               <p>
-                Nothing here touches a real processor. You type card details, pick an amount, and the app
-                calls a tiny API that randomly says yes, no, or keeps you waiting until the browser gives
-                up (about six seconds).
+                We split the experience into three routes — overview, payment, result — so the URL matches
+                where you are in the flow. State lives in Zustand (including a running history written to{' '}
+                <code className="rounded bg-brand-card px-1 py-0.5 font-mono text-[13px] text-brand-text/90">
+                  localStorage
+                </code>
+                ). On the payment screen we format the PAN as you type, guess card brand from the BIN-ish
+                prefix, validate expiry/CVV, run Luhn, then POST with{' '}
+                <code className="rounded bg-brand-card px-1 py-0.5 font-mono text-[13px] text-brand-text/90">
+                  AbortSignal
+                </code>{' '}
+                so the client drops the call around six seconds. Same transaction id (
+                <code className="rounded bg-brand-card px-1 py-0.5 font-mono text-[13px] text-brand-text/90">
+                  crypto.randomUUID()
+                </code>
+                ) on retries, capped at three attempts if something&apos;s still wrong.
               </p>
               <p>
-                Validators run as you type — spacing on the number, expiry shape, CVV length, and a Luhn
-                check so obviously wrong cards never leave the page.
+                Light/dark follows your saved preference with a tiny inline script so the page doesn&apos;t
+                flash the wrong theme on refresh. Beyond that it&apos;s mostly layout, forms, and handling
+                awkward states — which is most of what we wanted to show.
               </p>
               <p>
-                If the charge fails or times out, you can try again up to three times on the same attempt.
-                Past runs sit in the history drawer if you want to compare outcomes.
+                If you&apos;re reviewing this: thanks for reading the boring bits. Use the history drawer
+                anytime to line up past tries; the rest is clicking through like a normal checkout.
               </p>
             </div>
           </header>
@@ -86,32 +101,33 @@ export default function OrderSummary() {
           <ArrowUpRight className="text-brand-primary/85 motion-reduce:opacity-90" />
           <button
             type="button"
-            onClick={() => router.push(ROUTES.payment)}
+            onClick={() => startTransition(() => router.push(ROUTES.payment))}
             className="inline-flex w-full min-w-[11rem] items-center justify-center rounded-xl bg-brand-primary px-10 py-4 text-base font-semibold text-white shadow-lg shadow-brand-primary/30 ring-1 ring-white/10 transition-all duration-200 hover:bg-brand-primaryHover hover:shadow-xl hover:shadow-brand-primary/40 hover:-translate-y-0.5 active:translate-y-0 active:shadow-lg motion-reduce:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
           >
             Go to payment
           </button>
           <p className="max-w-[14rem] text-right text-sm leading-snug text-brand-muted">
-            Next screen: card form, amount, and submit.
+            Opens the payment route — form, amount, then submit.
           </p>
         </div>
       </div>
 
       <div className={`relative z-10 mt-12 max-w-5xl border-t border-brand-border/70 pt-12 ${reveal} [animation-delay:330ms]`}>
         <p className="text-[15px] leading-relaxed text-brand-muted">
-          There&apos;s also a simple session timer on the payment screen; when it hits zero you&apos;ll
-          need to start fresh. That&apos;s deliberate — it&apos;s annoying on purpose, same as in real
-          checkouts.
+          We also wired a short session countdown on the payment step. When it expires you get a modal and
+          have to restart — not fun, but it mirrors the &quot;your session timed out&quot; headache you see
+          in production carts.
         </p>
       </div>
 
       <p
         className={`relative z-10 mt-20 text-xs leading-relaxed text-brand-muted/70 ${reveal} [animation-delay:400ms]`}
       >
-        Stack is Next.js (App Router), TypeScript, Zustand, and Tailwind. Mock POST handler:{' '}
+        Built with Next.js (App Router), TypeScript, Zustand, Tailwind; mock charge endpoint at{' '}
         <code className="rounded-md bg-brand-card px-1.5 py-1 font-mono text-[11px] text-brand-text/90 ring-1 ring-brand-border/60">
           /api/pay
         </code>
+        .
       </p>
     </section>
   );
