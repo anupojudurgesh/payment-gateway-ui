@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import type { Step } from '@/types';
 
 const STEPS: { id: Step; label: string }[] = [
@@ -8,15 +9,33 @@ const STEPS: { id: Step; label: string }[] = [
   { id: 'result', label: 'Complete' },
 ];
 
-interface StepIndicatorProps {
-  currentStep: Step;
+function pathnameToStep(pathname: string): Step {
+  if (pathname === '/payment' || pathname.startsWith('/payment/')) {
+    return 'payment';
+  }
+  if (pathname === '/complete' || pathname.startsWith('/complete/')) {
+    return 'result';
+  }
+  return 'order';
 }
 
 function stepIndex(step: Step): number {
   return STEPS.findIndex((s) => s.id === step);
 }
 
-export default function StepIndicator({ currentStep }: Readonly<StepIndicatorProps>) {
+function stepCircleClass(completed: boolean, active: boolean): string {
+  if (completed) {
+    return 'border-brand-success bg-brand-success/15 text-brand-success';
+  }
+  if (active) {
+    return 'border-brand-primary bg-brand-primary text-white shadow-md shadow-brand-primary/35';
+  }
+  return 'border-brand-border bg-transparent text-brand-muted';
+}
+
+export default function StepIndicator() {
+  const pathname = usePathname();
+  const currentStep = pathnameToStep(pathname ?? '/');
   const activeIndex = stepIndex(currentStep);
 
   return (
@@ -30,17 +49,11 @@ export default function StepIndicator({ currentStep }: Readonly<StepIndicatorPro
             <li key={step.id} className="flex items-center gap-2 sm:gap-4">
               <div
                 className={`flex items-center gap-2 transition-all duration-300 ${
-                  active ? 'scale-105 opacity-100' : 'opacity-70'
+                  active ? 'scale-105 opacity-100' : 'opacity-80'
                 }`}
               >
                 <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-bold transition-colors ${
-                    completed
-                      ? 'border-brand-success bg-brand-success/20 text-brand-success'
-                      : active
-                        ? 'border-brand-primary bg-brand-primary text-white'
-                        : 'border-brand-border text-brand-muted'
-                  }`}
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold transition-colors ${stepCircleClass(completed, active)}`}
                   aria-current={active ? 'step' : undefined}
                 >
                   {completed ? (
@@ -61,8 +74,8 @@ export default function StepIndicator({ currentStep }: Readonly<StepIndicatorPro
               </div>
               {index < STEPS.length - 1 && (
                 <div
-                  className={`hidden h-0.5 w-8 rounded sm:block md:w-14 ${
-                    index < activeIndex ? 'bg-brand-success' : 'bg-brand-border'
+                  className={`hidden h-px w-8 rounded-full sm:block md:w-14 ${
+                    index < activeIndex ? 'bg-brand-success/60' : 'bg-brand-border'
                   }`}
                   aria-hidden
                 />

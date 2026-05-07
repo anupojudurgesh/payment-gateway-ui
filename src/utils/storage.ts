@@ -1,7 +1,9 @@
 import { Transaction } from '@/types';
 
 const STORAGE_KEY = 'payment_history';
-const THEME_KEY = 'payment_theme';
+
+/** Persisted key — referenced by blocking layout script for FOUC-free theme. */
+export const THEME_STORAGE_KEY = 'payment_theme';
 
 export type UiTheme = 'light' | 'dark';
 
@@ -28,7 +30,7 @@ export const clearHistory = (): void => {
 
 export const saveTheme = (theme: UiTheme): void => {
   try {
-    localStorage.setItem(THEME_KEY, theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
     console.error('Failed to save theme');
   }
@@ -36,7 +38,7 @@ export const saveTheme = (theme: UiTheme): void => {
 
 export const loadTheme = (): UiTheme | null => {
   try {
-    const value = localStorage.getItem(THEME_KEY);
+    const value = localStorage.getItem(THEME_STORAGE_KEY);
     if (value === 'light' || value === 'dark') {
       return value;
     }

@@ -1,36 +1,31 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useSyncExternalStore } from 'react';
 import { usePaymentStore } from '@/store/paymentStore';
-import { usePayment } from '@/hooks/usePayment';
-import { useFocusTrap } from '@/hooks/useFocusTrap';
-import StepIndicator from '@/components/StepIndicator';
-import OrderSummary from '@/components/OrderSummary';
-import PaymentForm from '@/components/PaymentForm';
 import TransactionHistory from '@/components/TransactionHistory';
-import StatusScreen from '@/components/StatusScreen';
+import StepIndicator from '@/components/StepIndicator';
 import ThemeToggle from '@/components/ThemeToggle';
-import { saveTheme, type UiTheme } from '@/utils/storage';
+import {
+  getThemeServerSnapshot,
+  getThemeSnapshot,
+  setStoredTheme,
+  subscribeTheme,
+} from '@/utils/themeExternalStore';
+import type { UiTheme } from '@/utils/storage';
 
-export default function HomePage() {
+interface CheckoutShellProps {
+  readonly children: React.ReactNode;
+}
+
+export default function CheckoutShell({ children }: CheckoutShellProps) {
   const {
     loadPersistedHistory,
-    currentStep,
     transactionHistory,
     historyPanelOpen,
     setHistoryPanelOpen,
   } = usePaymentStore();
-  const { status, currentTransaction, attemptCount, canRetry, handleRetry, handleReset } =
-    usePayment();
-  const [theme, setTheme] = useState<UiTheme>('dark');
 
-  const orderRef = useRef<HTMLDivElement>(null);
-  const payShellRef = useRef<HTMLDivElement>(null);
-  const resultRef = useRef<HTMLDivElement>(null);
-
-  useFocusTrap(orderRef, currentStep === 'order');
-  useFocusTrap(payShellRef, currentStep === 'payment');
-  useFocusTrap(resultRef, currentStep === 'result');
+  const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getThemeServerSnapshot);
 
   useEffect(() => {
     loadPersistedHistory();
@@ -38,25 +33,34 @@ export default function HomePage() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-dark', theme === 'dark');
-    saveTheme(theme);
   }, [theme]);
 
   const handleThemeToggle = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    const next: UiTheme = theme === 'dark' ? 'light' : 'dark';
+    setStoredTheme(next);
   };
 
   return (
     <main className="min-h-screen bg-brand-bg px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
       <div className="relative mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between gap-4">
-          <StepIndicator currentStep={currentStep} />
-          <div className="flex items-center gap-2">
+          <Suspense
+            fallback={
+              <div
+                className="h-9 min-w-[200px] rounded-full bg-brand-card/80 motion-safe:animate-pulse"
+                aria-hidden
+              />
+            }
+          >
+            <StepIndicator />
+          </Suspense>
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => setHistoryPanelOpen(true)}
               className="inline-flex items-center gap-2 rounded-md border border-brand-border bg-brand-surface px-3 py-1.5 text-xs font-semibold text-brand-text transition-all hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             >
-              <span>History</span>
+              <span>Transaction History</span>
               <span className="rounded-md bg-brand-card px-1.5 py-0.5 text-[10px] text-brand-muted">
                 {transactionHistory.length}
               </span>
@@ -65,36 +69,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {currentStep === 'order' && (
-          <div ref={orderRef} tabIndex={-1} className="outline-none">
-            <OrderSummary />
-          </div>
-        )}
-
-        {currentStep === 'payment' && (
-          <div ref={payShellRef} tabIndex={-1} className="outline-none">
-            <section className="glass mx-auto max-w-5xl rounded-2xl p-5 shadow-xl shadow-black/10 sm:p-8">
-              <PaymentForm />
-            </section>
-          </div>
-        )}
-
-        {currentStep === 'result' && (
-          <div
-            ref={resultRef}
-            tabIndex={-1}
-            className="glass rounded-2xl p-6 shadow-xl shadow-black/10 outline-none sm:p-10"
-          >
-            <StatusScreen
-              status={status}
-              transaction={currentTransaction}
-              attemptCount={attemptCount}
-              canRetry={canRetry}
-              onRetry={handleRetry}
-              onReset={handleReset}
-            />
-          </div>
-        )}
+        {children}
       </div>
 
       <button
